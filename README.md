@@ -70,6 +70,26 @@ curl http://localhost:5000/api/conversation
 ## 🐳 Using Docker
 
 ```bash
+
+
+# Build development version
+docker build --target development -t neural-chatbot:dev .
+
+# Build production version  
+docker build --target production -t neural-chatbot:prod .
+
+# Run development version
+docker run -p 5000:5000 neural-chatbot:dev
+
+# Run production version
+docker run -p 5000:5000 neural-chatbot:prod
+
+# Or use docker-compose
+docker-compose up -d
+
+# ---
+
+
 # Quick start with Docker Compose
 docker-compose up -d
 
