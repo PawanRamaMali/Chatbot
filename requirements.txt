@@ -1,6 +1,33 @@
-random
-json
-pickle
-numpy
-nltk
-tensorflow
+# Core dependencies
+numpy>=1.21.0,<2.0.0
+tensorflow>=2.8.0,<3.0.0
+nltk>=3.7,<4.0.0
+scikit-learn>=1.0.0,<2.0.0
+pandas>=1.3.0,<3.0.0
+
+# Web framework
+flask>=2.0.0,<3.0.0
+flask-cors>=3.0.10,<5.0.0
+gunicorn>=20.1.0,<22.0.0
+gevent>=22.10.0,<24.0.0
+
+# Configuration and validation
+pyyaml>=6.0,<7.0.0
+marshmallow>=3.14.0,<4.0.0
+python-dotenv>=0.19.0,<2.0.0
+click>=8.0.0,<9.0.0
+
+# Logging and utilities
+colorlog>=6.0.0,<7.0.0
+psutil>=5.8.0,<6.0.0
+
+# Data processing
+joblib>=1.1.0,<2.0.0
+regex>=2022.1.18
+
+# Optional visualization (install with pip install -e ".[plot]")
+# matplotlib>=3.5.0,<4.0.0
+# seaborn>=0.11.0,<1.0.0
+# plotly>=5.0.0,<6.0.0
+# Optional testing (install with pip install -e ".[test]")
+# pytest>=7.0.0,<8.
