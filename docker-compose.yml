@@ -1,1 +1,146 @@
- 
+version: '3.8'
+
+services:
+  # Neural Chatbot Application
+  chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: neural-chatbot
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NEURAL_CHATBOT_HOST=0.0.0.0
+      - NEURAL_CHATBOT_PORT=5000
+      - NEURAL_CHATBOT_DEBUG=false
+      - NEURAL_CHATBOT_LOG_LEVEL=INFO
+      - NEURAL_CHATBOT_SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - chatbot-network
+    depends_on:
+      - redis
+
+  # Redis for session storage and caching
+  redis:
+    image: redis:7-alpine
+    container_name: neural-chatbot-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - chatbot-network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: neural-chatbot-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deployment/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployment/ssl:/etc/nginx/ssl:ro
+      - ./src/neural_chatbot/web/static:/var/www/static:ro
+    depends_on:
+      - chatbot
+    networks:
+      - chatbot-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Prometheus for monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: neural-chatbot-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - chatbot-network
+    profiles:
+      - monitoring
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: neural-chatbot-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - chatbot-network
+    profiles:
+      - monitoring
+
+volumes:
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  chatbot-network:
+    driver: bridge
+
+# Development override
+---
+# docker-compose.override.yml for development
+version: '3.8'
+
+services:
+  chatbot:
+    build:
+      target: development
+    environment:
+      - NEURAL_CHATBOT_DEBUG=true
+      - NEURAL_CHATBOT_LOG_LEVEL=DEBUG
+    volumes:
+      - .:/app
+      - /app/src/neural_chatbot/__pycache__
+    command: ["python", "-m", "neural_chatbot.api.app", "--debug"]
+    ports:
+      - "5000:5000"
+      - "5678:5678"  # For debugging

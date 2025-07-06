@@ -1,1 +1,60 @@
- 
+# Neural Chatbot Configuration File
+# This file contains all configuration settings for the chatbot
+
+# Model Configuration
+model:
+  learning_rate: 0.001
+  epochs: 200
+  batch_size: 8
+  dropout_rate: 0.5
+  confidence_threshold: 0.25
+  hidden_layers: [128, 64, 32]
+  activation: 'relu'
+  optimizer: 'adam'
+  loss_function: 'categorical_crossentropy'
+
+# Data Configuration
+data:
+  intents_file: 'intents.json'
+  words_file: 'words.pkl'
+  classes_file: 'classes.pkl'
+  model_file: 'chatbot_model.h5'
+  max_response_length: 500
+  min_word_frequency: 1
+  max_vocab_size: 10000
+
+# Training Configuration
+training:
+  validation_split: 0.1
+  early_stopping_patience: 20
+  reduce_lr_patience: 10
+  reduce_lr_factor: 0.2
+  min_learning_rate: 0.0001
+  save_best_only: true
+  monitor_metric: 'val_accuracy'
+
+# API Configuration
+api:
+  host: '0.0.0.0'
+  port: 5000
+  debug: false
+  secret_key: 'change-me-in-production'
+  cors_enabled: true
+  rate_limit_per_minute: 60
+  max_content_length: 1048576  # 1MB
+
+# Logging Configuration
+logging:
+  level: 'INFO'
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  file: 'logs/chatbot.log'
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Security Configuration
+security:
+  max_message_length: 500
+  session_timeout_hours: 24
+  csrf_enabled: true
+  sanitize_input: true
+  blacklisted_words: []
