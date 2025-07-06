@@ -80,15 +80,15 @@ write_to = "src/neural_chatbot/_version.py"
 [tool.black]
 line-length = 100
 target-version = ['py38']
-include = '\.pyi?$'
+include = '\\.pyi?$'
 extend-exclude = '''
 /(
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
+  \\.eggs
+  | \\.git
+  | \\.hg
+  | \\.mypy_cache
+  | \\.tox
+  | \\.venv
   | _build
   | buck-out
   | build
@@ -152,6 +152,6 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\bProtocol\):",
-    "@(abc\.)?abstractmethod",
+    "class .*\\(.*Protocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]

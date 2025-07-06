@@ -50,7 +50,7 @@ RUN mkdir -p /app/models /app/logs /app/data /app/plots /app/reports /app/config
 
 # Copy configuration and data files
 COPY src/neural_chatbot/config/config.yaml /app/config/config.yaml
-COPY intents.json /app/data/intents.json
+COPY intents.json /app/intents.json
 
 # Set correct ownership
 RUN chown -R chatbot:chatbot /app
