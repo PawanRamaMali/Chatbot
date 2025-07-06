@@ -1,23 +1,352 @@
-{"intents": [
-    {"tag": "greetings",
-      "patterns": ["Hi", "How are you","How is it going?", "Is anyone there?", "Hello", "Good day",
-                    "Hello", "Wassup ?", "Whats up", "Hey", "greetings"],
-      "responses": ["Hello!", "Good to see you again!", "Hi there, how can I help?",
-                    "Hey! What can I do for you ?"],
-      "context_set": ""
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "Hi",
+        "How are you",
+        "Is anyone there?",
+        "Hello",
+        "Good day",
+        "Wassup?",
+        "What's up",
+        "Hey",
+        "greetings",
+        "good morning",
+        "good evening",
+        "good afternoon",
+        "hey there",
+        "howdy",
+        "hiya",
+        "what's going on",
+        "how's it going"
+      ],
+      "responses": [
+        "Hello! How can I help you today?",
+        "Good to see you again!",
+        "Hi there, how can I help?",
+        "Hey! What can I do for you?",
+        "Hello! I'm here to assist you.",
+        "Hi! How may I help you today?",
+        "Greetings! What would you like to know?"
+      ],
+      "context_set": "greeting"
     },
-    {"tag": "goodbye",
-      "patterns": ["cya", "See you later", "Goodbye", "I am Leaving", "Have a Good day", "bye", "cao", "see ya"],
-      "responses": ["Sad to see you go :(", "Talk to you later", "Goodbye!"],
-      "context_set": ""
+    {
+      "tag": "goodbye",
+      "patterns": [
+        "cya",
+        "See you later",
+        "Goodbye",
+        "I am Leaving",
+        "Have a Good day",
+        "bye",
+        "cao",
+        "see ya",
+        "catch you later",
+        "talk to you later",
+        "until next time",
+        "farewell",
+        "take care",
+        "peace out",
+        "so long",
+        "adios",
+        "bye bye"
+      ],
+      "responses": [
+        "Sad to see you go :(",
+        "Talk to you later!",
+        "Goodbye!",
+        "Have a great day!",
+        "See you soon!",
+        "Take care!",
+        "Until next time!",
+        "Bye! Feel free to come back anytime."
+      ],
+      "context_set": "goodbye"
     },
-    {"tag": "stocks",
-      "patterns": ["what stocks do I own?", "how are my shares?", "what companies am I investing in?", "what am I doing in the markets?"],
-      "responses": ["You own the following shares: ABBV, AAPL, FB, NVDA and an ETF of the S&P 500 Index!"],
-      "context_set": ""
+    {
+      "tag": "stocks",
+      "patterns": [
+        "what stocks do I own?",
+        "how are my shares?",
+        "what companies am I investing in?",
+        "what am I doing in the markets?",
+        "show me my portfolio",
+        "my investments",
+        "what's in my portfolio",
+        "portfolio status",
+        "investment holdings",
+        "my stock holdings",
+        "what do I have invested",
+        "stock portfolio"
+      ],
+      "responses": [
+        "You own the following shares: ABBV, AAPL, FB, NVDA and an ETF of the S&P 500 Index!",
+        "Your current portfolio includes: AbbVie (ABBV), Apple (AAPL), Meta (FB), NVIDIA (NVDA), and an S&P 500 ETF.",
+        "Your investment holdings are: ABBV, AAPL, FB, NVDA, and S&P 500 Index ETF.",
+        "Here's what you're invested in: AbbVie, Apple, Meta, NVIDIA, and the S&P 500 Index fund."
+      ],
+      "context_set": "portfolio"
     },
-    {"tag":"name",
-        "patterns":["what is your name", "what should I call you"],
-        "responses":["You can call me Neural!.", "I'm Neural!"]}
+    {
+      "tag": "name",
+      "patterns": [
+        "what is your name",
+        "what should I call you",
+        "who are you",
+        "what are you called",
+        "your name please",
+        "may I know your name",
+        "introduce yourself",
+        "tell me about yourself",
+        "what do they call you"
+      ],
+      "responses": [
+        "You can call me Neural!",
+        "I'm Neural!",
+        "My name is Neural, your AI assistant!",
+        "I'm Neural, an AI chatbot here to help you!",
+        "You can call me Neural. How can I assist you today?"
+      ],
+      "context_set": "identity"
+    },
+    {
+      "tag": "help",
+      "patterns": [
+        "help",
+        "what can you do",
+        "how can you help me",
+        "what are your capabilities",
+        "what do you know",
+        "assist me",
+        "I need help",
+        "can you help",
+        "what services do you provide",
+        "what can I ask you",
+        "how does this work",
+        "what are you for"
+      ],
+      "responses": [
+        "I can help you with various tasks like checking your stock portfolio, answering questions, and having conversations. What would you like to know?",
+        "I'm here to assist you! I can help with portfolio information, answer questions, and chat with you. How can I help today?",
+        "I can help you check your investments, answer questions, and provide assistance. What do you need help with?",
+        "I'm capable of helping with portfolio queries, general questions, and conversations. What would you like to explore?"
+      ],
+      "context_set": "help"
+    },
+    {
+      "tag": "thanks",
+      "patterns": [
+        "thank you",
+        "thanks",
+        "thx",
+        "appreciate it",
+        "thanks a lot",
+        "thank you very much",
+        "much appreciated",
+        "grateful",
+        "cheers",
+        "thanks so much",
+        "I appreciate your help",
+        "that was helpful"
+      ],
+      "responses": [
+        "You're welcome!",
+        "Happy to help!",
+        "Anytime!",
+        "Glad I could assist!",
+        "You're very welcome!",
+        "My pleasure!",
+        "No problem at all!",
+        "Always here to help!"
+      ],
+      "context_set": "thanks"
+    },
+    {
+      "tag": "age",
+      "patterns": [
+        "how old are you",
+        "what is your age",
+        "when were you born",
+        "when were you created",
+        "how long have you existed",
+        "what's your age",
+        "are you old",
+        "when did you start"
+      ],
+      "responses": [
+        "I'm a neural network, so I don't age like humans do. I was trained recently to help you!",
+        "I don't have an age in the traditional sense, but I'm a newly trained AI assistant!",
+        "As an AI, I don't really have an age, but I'm here and ready to help you!",
+        "I'm timeless! But seriously, I'm an AI so age doesn't quite apply to me."
+      ],
+      "context_set": "identity"
+    },
+    {
+      "tag": "time",
+      "patterns": [
+        "what time is it",
+        "current time",
+        "what's the time",
+        "time please",
+        "can you tell me the time",
+        "what time",
+        "clock"
+      ],
+      "responses": [
+        "I don't have access to real-time data, but you can check your device's clock for the current time!",
+        "I can't tell you the exact time, but your device should show the current time.",
+        "Sorry, I don't have access to the current time. Please check your system clock!",
+        "I'm not able to access real-time information like the current time."
+      ],
+      "context_set": "time"
+    },
+    {
+      "tag": "weather",
+      "patterns": [
+        "what's the weather like",
+        "how's the weather",
+        "weather today",
+        "is it raining",
+        "weather forecast",
+        "temperature outside",
+        "is it sunny",
+        "weather update"
+      ],
+      "responses": [
+        "I don't have access to current weather data. You might want to check a weather app or website for accurate information!",
+        "Sorry, I can't provide weather information. Please check your local weather service for current conditions.",
+        "I don't have real-time weather data. Try checking your weather app for current conditions!",
+        "Weather information isn't something I can access. Your local weather app would be more helpful!"
+      ],
+      "context_set": "weather"
+    },
+    {
+      "tag": "joke",
+      "patterns": [
+        "tell me a joke",
+        "make me laugh",
+        "say something funny",
+        "joke please",
+        "humor me",
+        "funny joke",
+        "entertain me",
+        "something amusing"
+      ],
+      "responses": [
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "I told my computer a joke about UDP... I'm not sure if it got it.",
+        "Why do programmers prefer dark mode? Because light attracts bugs!",
+        "How do you comfort a JavaScript bug? You console it!",
+        "Why did the neural network break up with the database? It wasn't getting enough connections!"
+      ],
+      "context_set": "entertainment"
+    },
+    {
+      "tag": "capabilities",
+      "patterns": [
+        "what can you do",
+        "your abilities",
+        "what are you capable of",
+        "your functions",
+        "what do you offer",
+        "your features",
+        "what's possible",
+        "your skills"
+      ],
+      "responses": [
+        "I can help you check your investment portfolio, answer questions, have conversations, and provide assistance with various topics!",
+        "My capabilities include portfolio inquiries, general Q&A, conversations, and helping with information you need!",
+        "I can assist with checking your stocks, answering questions, chatting, and providing helpful information on various topics.",
+        "I'm designed to help with portfolio management queries, general assistance, and engaging conversations!"
+      ],
+      "context_set": "capabilities"
+    },
+    {
+      "tag": "compliment",
+      "patterns": [
+        "you are awesome",
+        "you're great",
+        "good job",
+        "well done",
+        "excellent",
+        "you're helpful",
+        "nice work",
+        "impressive",
+        "you're smart",
+        "amazing"
+      ],
+      "responses": [
+        "Thank you! I appreciate the kind words!",
+        "That's very nice of you to say!",
+        "Thanks! I'm here to help anytime!",
+        "I appreciate the compliment! Happy to assist!",
+        "Thank you! Your feedback means a lot!",
+        "You're too kind! Let me know how else I can help!"
+      ],
+      "context_set": "positive"
+    },
+    {
+      "tag": "insult",
+      "patterns": [
+        "you are stupid",
+        "you're dumb",
+        "you suck",
+        "you're useless",
+        "you're bad",
+        "you're terrible",
+        "I hate you",
+        "you're awful"
+      ],
+      "responses": [
+        "I'm sorry if I couldn't help you properly. Let me try to assist you better!",
+        "I understand you might be frustrated. How can I help you more effectively?",
+        "I apologize if I haven't been helpful. What can I do to improve?",
+        "I'm here to help, and I want to do better. What do you need assistance with?"
+      ],
+      "context_set": "negative"
+    },
+    {
+      "tag": "market",
+      "patterns": [
+        "how is the market",
+        "market status",
+        "stock market today",
+        "market performance",
+        "how are stocks doing",
+        "market update",
+        "market news",
+        "stock market performance"
+      ],
+      "responses": [
+        "I don't have access to real-time market data. For current market information, I recommend checking financial news websites or your trading platform!",
+        "Sorry, I can't provide current market updates. Please check financial news sources for the latest market performance.",
+        "I don't have live market data. For current stock market information, try financial news websites or market apps!",
+        "Real-time market data isn't available to me. Check your preferred financial news source for current market status."
+      ],
+      "context_set": "market"
+    },
+    {
+      "tag": "default",
+      "patterns": [
+        "I don't understand",
+        "what?",
+        "huh?",
+        "can you repeat that",
+        "I'm confused",
+        "that doesn't make sense",
+        "unclear",
+        "what do you mean"
+      ],
+      "responses": [
+        "I'm not sure I understand. Could you please rephrase that?",
+        "Can you try asking that in a different way?",
+        "I didn't quite catch that. Could you be more specific?",
+        "I'm still learning! Could you help me by rephrasing your question?",
+        "I want to help, but I need you to be more clear. Can you try again?"
+      ],
+      "context_set": "clarification"
+    }
   ]
 }

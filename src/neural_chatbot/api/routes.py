@@ -11,6 +11,10 @@ from marshmallow import Schema, fields, ValidationError
 
 from ..utils.logger import get_logger
 from ..utils.helpers import validate_message_length, sanitize_input
+from .middleware import (
+    validate_json_request, require_initialization, 
+    log_request_response, monitor_performance
+)
 
 logger = get_logger(__name__)
 
@@ -53,6 +57,9 @@ def get_or_create_user_id() -> str:
 
 
 @api_bp.route('/chat', methods=['POST'])
+@monitor_performance
+@require_initialization
+@validate_json_request(['message'])
 def chat():
     """Chat endpoint for sending messages to the chatbot"""
     try:
@@ -68,13 +75,6 @@ def chat():
             return jsonify({
                 'error': f'Message too long. Maximum length is {current_app.settings.security.max_message_length} characters.'
             }), 400
-        
-        # Check if chatbot is initialized
-        if not current_app.chatbot.is_initialized:
-            return jsonify({
-                'error': 'Chatbot not initialized. Please train the model first.',
-                'status': 'not_initialized'
-            }), 503
         
         # Get chatbot response
         response = current_app.chatbot.get_response(message, user_id)
@@ -93,10 +93,100 @@ def chat():
         return jsonify(result)
         
     except ValidationError as e:
+        return jsonify({'error': 'Invalid request', 'details': e.messages}), 400
+    except Exception as e:
+        logger.error(f"Error in chat endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@api_bp.route('/conversation', methods=['GET'])
+@monitor_performance
+@require_initialization
+def get_conversation():
+    """Get conversation history for current user"""
+    try:
+        user_id = get_or_create_user_id()
+        conversation = current_app.chatbot.get_conversation_history(user_id)
+        
+        result = {
+            'conversation': conversation,
+            'total_messages': len(conversation),
+            'user_id': user_id
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error getting conversation: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@api_bp.route('/conversation', methods=['DELETE'])
+@monitor_performance
+@require_initialization
+def clear_conversation():
+    """Clear conversation history for current user"""
+    try:
+        user_id = get_or_create_user_id()
+        current_app.chatbot.clear_conversation_history(user_id)
+        
+        logger.info(f"Cleared conversation history for user {user_id}")
+        return jsonify({'message': 'Conversation history cleared', 'user_id': user_id})
+        
+    except Exception as e:
+        logger.error(f"Error clearing conversation: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@api_bp.route('/conversation/export', methods=['GET'])
+@monitor_performance
+@require_initialization
+def export_conversation():
+    """Export conversation history"""
+    try:
+        user_id = get_or_create_user_id()
+        conversation = current_app.chatbot.get_conversation_history(user_id)
+        
+        # Create export data
+        export_data = {
+            'user_id': user_id,
+            'export_timestamp': datetime.now().isoformat(),
+            'conversation_count': len(conversation),
+            'conversation': conversation
+        }
+        
+        return jsonify(export_data)
+        
+    except Exception as e:
+        logger.error(f"Error exporting conversation: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@api_bp.route('/status', methods=['GET'])
+@monitor_performance
+def get_status():
+    """Get chatbot status"""
+    try:
+        health = current_app.chatbot.health_check()
+        statistics = current_app.chatbot.get_statistics()
+        
+        status = {
+            'health': health,
+            'statistics': statistics,
+            'timestamp': datetime.now().isoformat(),
+            'version': '1.0.0'
+        }
+        
+        return jsonify(status)
+        
+    except Exception as e:
+        logger.error(f"Error getting status: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 
 @api_bp.route('/statistics', methods=['GET'])
+@monitor_performance
+@require_initialization
 def get_statistics():
     """Get detailed chatbot statistics"""
     try:
@@ -109,6 +199,8 @@ def get_statistics():
 
 
 @api_bp.route('/training', methods=['POST'])
+@monitor_performance
+@validate_json_request(['intents_data'])
 def train_model():
     """Train or retrain the chatbot model"""
     try:
@@ -141,6 +233,7 @@ def train_model():
 
 
 @api_bp.route('/training/status', methods=['GET'])
+@monitor_performance
 def get_training_status():
     """Get training status"""
     try:
@@ -161,6 +254,8 @@ def get_training_status():
 
 
 @api_bp.route('/intents', methods=['GET'])
+@monitor_performance
+@require_initialization
 def get_intents():
     """Get current intents data"""
     try:
@@ -173,6 +268,9 @@ def get_intents():
 
 
 @api_bp.route('/intents', methods=['PUT'])
+@monitor_performance
+@require_initialization
+@validate_json_request()
 def update_intents():
     """Update intents without retraining"""
     try:
@@ -200,6 +298,9 @@ def update_intents():
 
 
 @api_bp.route('/predict', methods=['POST'])
+@monitor_performance
+@require_initialization
+@validate_json_request(['message'])
 def predict_intent():
     """Predict intent for a message without storing conversation"""
     try:
@@ -212,10 +313,6 @@ def predict_intent():
         # Validate message length
         if not validate_message_length(message, current_app.settings.security.max_message_length):
             return jsonify({'error': 'Message too long'}), 400
-        
-        # Check if chatbot is initialized
-        if not current_app.chatbot.is_initialized:
-            return jsonify({'error': 'Chatbot not initialized'}), 503
         
         # Predict intent
         intent, confidence, all_predictions = current_app.chatbot.predict_intent(message)
@@ -239,13 +336,11 @@ def predict_intent():
 
 
 @api_bp.route('/evaluate', methods=['POST'])
+@monitor_performance
+@require_initialization
 def evaluate_model():
     """Evaluate model performance"""
     try:
-        # Check if chatbot is initialized
-        if not current_app.chatbot.is_initialized:
-            return jsonify({'error': 'Chatbot not initialized'}), 503
-        
         # Evaluate model
         evaluation_results = current_app.chatbot.evaluate_model()
         
@@ -260,6 +355,7 @@ def evaluate_model():
 
 
 @api_bp.route('/config', methods=['GET'])
+@monitor_performance
 def get_config():
     """Get current configuration (sanitized)"""
     try:
@@ -276,6 +372,8 @@ def get_config():
 
 
 @api_bp.route('/users/stats', methods=['GET'])
+@monitor_performance
+@require_initialization
 def get_user_stats():
     """Get user statistics"""
     try:
@@ -292,6 +390,7 @@ def get_user_stats():
 
 
 @api_bp.route('/docs', methods=['GET'])
+@monitor_performance
 def api_documentation():
     """API documentation endpoint"""
     docs = {
@@ -365,6 +464,7 @@ def api_documentation():
             '404': 'Not Found - Endpoint not found',
             '405': 'Method Not Allowed - HTTP method not supported',
             '413': 'Request Entity Too Large - Request body too large',
+            '429': 'Too Many Requests - Rate limit exceeded',
             '500': 'Internal Server Error - Server error',
             '503': 'Service Unavailable - Chatbot not initialized'
         }
@@ -376,86 +476,4 @@ def api_documentation():
 def register_routes(app):
     """Register all API routes"""
     app.register_blueprint(api_bp)
-    logger.info("API routes registered successfully")error': 'Invalid request', 'details': e.messages}), 400
-    except Exception as e:
-        logger.error(f"Error in chat endpoint: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@api_bp.route('/conversation', methods=['GET'])
-def get_conversation():
-    """Get conversation history for current user"""
-    try:
-        user_id = get_or_create_user_id()
-        conversation = current_app.chatbot.get_conversation_history(user_id)
-        
-        result = {
-            'conversation': conversation,
-            'total_messages': len(conversation),
-            'user_id': user_id
-        }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        logger.error(f"Error getting conversation: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@api_bp.route('/conversation', methods=['DELETE'])
-def clear_conversation():
-    """Clear conversation history for current user"""
-    try:
-        user_id = get_or_create_user_id()
-        current_app.chatbot.clear_conversation_history(user_id)
-        
-        logger.info(f"Cleared conversation history for user {user_id}")
-        return jsonify({'message': 'Conversation history cleared', 'user_id': user_id})
-        
-    except Exception as e:
-        logger.error(f"Error clearing conversation: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@api_bp.route('/conversation/export', methods=['GET'])
-def export_conversation():
-    """Export conversation history"""
-    try:
-        user_id = get_or_create_user_id()
-        conversation = current_app.chatbot.get_conversation_history(user_id)
-        
-        # Create export data
-        export_data = {
-            'user_id': user_id,
-            'export_timestamp': datetime.now().isoformat(),
-            'conversation_count': len(conversation),
-            'conversation': conversation
-        }
-        
-        return jsonify(export_data)
-        
-    except Exception as e:
-        logger.error(f"Error exporting conversation: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@api_bp.route('/status', methods=['GET'])
-def get_status():
-    """Get chatbot status"""
-    try:
-        health = current_app.chatbot.health_check()
-        statistics = current_app.chatbot.get_statistics()
-        
-        status = {
-            'health': health,
-            'statistics': statistics,
-            'timestamp': datetime.now().isoformat(),
-            'version': '1.0.0'
-        }
-        
-        return jsonify(status)
-        
-    except Exception as e:
-        logger.error(f"Error getting status: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-    
+    logger.info("API routes registered successfully")
