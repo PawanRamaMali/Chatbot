@@ -6,7 +6,9 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    NLTK_DATA=/usr/local/share/nltk_data
+    NLTK_DATA=/usr/local/share/nltk_data \
+    MPLCONFIGDIR=/tmp/matplotlib \
+    HOME=/tmp
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -17,23 +19,45 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r chatbot && useradd -r -g chatbot chatbot
+# Create non-root user with proper home directory
+RUN groupadd -r chatbot && useradd -r -g chatbot -d /app -s /bin/bash chatbot
 
 # Set working directory
 WORKDIR /app
+
+# Create matplotlib config directory
+RUN mkdir -p /tmp/matplotlib && chown -R chatbot:chatbot /tmp/matplotlib
 
 # Copy and install Python dependencies first (for better caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download NLTK data as root user to avoid permission issues
-RUN python -c "import nltk; \
-    nltk.download('punkt', download_dir='/usr/local/share/nltk_data', quiet=True); \
-    nltk.download('wordnet', download_dir='/usr/local/share/nltk_data', quiet=True); \
-    nltk.download('omw-1.4', download_dir='/usr/local/share/nltk_data', quiet=True); \
-    nltk.download('stopwords', download_dir='/usr/local/share/nltk_data', quiet=True)" && \
-    chmod -R 755 /usr/local/share/nltk_data
+# Create NLTK download script
+RUN echo 'import nltk\n\
+import ssl\n\
+\n\
+try:\n\
+    _create_unverified_https_context = ssl._create_unverified_context\n\
+except AttributeError:\n\
+    pass\n\
+else:\n\
+    ssl._create_default_https_context = _create_unverified_https_context\n\
+\n\
+downloads = ["punkt", "punkt_tab", "wordnet", "omw-1.4", "stopwords"]\n\
+\n\
+for item in downloads:\n\
+    try:\n\
+        nltk.download(item, download_dir="/usr/local/share/nltk_data", quiet=True)\n\
+        print(f"Downloaded: {item}")\n\
+    except Exception as e:\n\
+        print(f"Failed to download {item}: {e}")\n\
+\n\
+print("NLTK downloads completed")' > /tmp/download_nltk.py
+
+# Download NLTK data
+RUN python /tmp/download_nltk.py && \
+    chmod -R 755 /usr/local/share/nltk_data && \
+    rm /tmp/download_nltk.py
 
 # Copy application code
 COPY src/ src/
@@ -77,7 +101,7 @@ FROM base AS production
 # Switch back to root to install gunicorn config
 USER root
 
-# Copy gunicorn configuration (create it if it doesn't exist)
+# Copy gunicorn configuration
 COPY deployment/gunicorn.conf.py /app/gunicorn.conf.py
 
 # Set ownership and switch back to chatbot user

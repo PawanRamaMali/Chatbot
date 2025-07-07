@@ -73,6 +73,7 @@ class DataProcessor:
                 self.settings.data.intents_file,
                 f"data/{self.settings.data.intents_file}",
                 f"src/neural_chatbot/data/{self.settings.data.intents_file}",
+                "intents.json",  # Add root level as fallback
             ]
             
             for path in possible_paths:
@@ -109,9 +110,6 @@ class DataProcessor:
         # Remove ignore characters
         for char in self.ignore_chars:
             text = text.replace(char, '')
-        
-        # Remove digits if needed (optional)
-        # text = re.sub(r'\d+', '', text)
         
         return text.strip()
     

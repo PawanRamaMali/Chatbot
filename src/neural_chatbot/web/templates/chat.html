@@ -1,1 +1,357 @@
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Chatbot - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+        }
+        
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .chat-input-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+        
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        
+        .send-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            color: #666;
+            font-style: italic;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        
+        .status-bar {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .connection-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+        
+        .connection-status.connected {
+            background: #2ed573;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 Neural Chatbot</h1>
+            <p>Testing Interface - Connect to API</p>
+            <div class="connection-status" id="connectionStatus"></div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">
+                    Hello! I'm Neural, your AI assistant. How can I help you today?
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            Neural is thinking...
+        </div>
+        
+        <div class="status-bar">
+            <span id="statusText">Ready to chat</span>
+        </div>
+        
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="chatForm">
+                <input type="text" class="chat-input" id="messageInput" placeholder="Type your message..." autocomplete="off">
+                <button type="submit" class="send-button" id="sendButton">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const chatForm = document.getElementById('chatForm');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const statusText = document.getElementById('statusText');
+        const sendButton = document.getElementById('sendButton');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        // API configuration
+        const API_BASE_URL = 'http://localhost:5000';
+
+        // Test connection on load
+        testConnection();
+
+        function testConnection() {
+            fetch(`${API_BASE_URL}/health`)
+                .then(response => {
+                    if (response.ok) {
+                        connectionStatus.classList.add('connected');
+                        statusText.textContent = 'Connected to Neural Chatbot API';
+                    } else {
+                        throw new Error('API not responding');
+                    }
+                })
+                .catch(error => {
+                    connectionStatus.classList.remove('connected');
+                    statusText.textContent = 'Connection failed - Check if API is running on localhost:5000';
+                    addMessage('❌ Connection Error: Make sure the Neural Chatbot API is running on localhost:5000', false, true);
+                });
+        }
+
+        function addMessage(content, isUser = false, isError = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const now = new Date().toLocaleTimeString();
+            const messageClass = isError ? 'error-message' : 'message-content';
+            
+            messageDiv.innerHTML = `
+                <div class="${messageClass}">
+                    ${content}
+                    <div class="message-time">${isUser ? 'You' : 'Neural'} • ${now}</div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            typingIndicator.style.display = 'block';
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            statusText.textContent = 'Neural is thinking...';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+            sendButton.disabled = false;
+            sendButton.textContent = 'Send';
+            statusText.textContent = 'Ready to chat';
+        }
+
+        async function sendMessage(message) {
+            try {
+                statusText.textContent = 'Sending message...';
+                
+                const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        message: message,
+                        user_id: 'web_test_user'
+                    })
+                });
+
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        throw new Error('Chatbot not initialized. Please train the model first.');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                hideTyping();
+                
+                // Add response with metadata
+                const responseContent = `${data.response}<br><small>Intent: ${data.intent} | Confidence: ${Math.round(data.confidence * 100)}%</small>`;
+                addMessage(responseContent, false);
+                
+            } catch (error) {
+                hideTyping();
+                console.error('Error:', error);
+                addMessage(`Error: ${error.message}`, false, true);
+                statusText.textContent = 'Error occurred';
+            }
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, true);
+            messageInput.value = '';
+            
+            // Show typing indicator
+            showTyping();
+            
+            // Send message to API
+            await sendMessage(message);
+        });
+
+        // Focus on input
+        messageInput.focus();
+
+        // Handle Enter key
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Test API endpoints
+        function testAPI() {
+            addMessage('Testing API endpoints...', false);
+            
+            fetch(`${API_BASE_URL}/api/status`)
+                .then(response => response.json())
+                .then(data => {
+                    addMessage(`API Status: ${JSON.stringify(data, null, 2)}`, false);
+                })
+                .catch(error => {
+                    addMessage(`API Test Failed: ${error.message}`, false, true);
+                });
+        }
+
+        // Add test button functionality
+        setTimeout(() => {
+            const testMessage = "You can test with: 'hello', 'what stocks do I own?', 'tell me a joke', 'goodbye'";
+            addMessage(testMessage, false);
+        }, 1000);
+    </script>
+</body>
+</html>
