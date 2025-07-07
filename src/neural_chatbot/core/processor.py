@@ -19,6 +19,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from ..config.settings import Settings
 from ..utils.logger import get_logger
+from ..data.loader import DataLoader
 
 logger = get_logger(__name__)
 
@@ -30,6 +31,7 @@ class DataProcessor:
         self.settings = settings
         self.lemmatizer = WordNetLemmatizer()
         self.label_encoder = LabelEncoder()
+        self.data_loader = DataLoader()  
         
         # Text processing settings
         self.ignore_chars = ['?', '!', '.', ',', ';', ':', '"', "'", '(', ')', '[', ']']
@@ -66,9 +68,8 @@ class DataProcessor:
             self.stop_words = set()
     
     def load_intents(self, filepath: Optional[str] = None) -> Dict[str, Any]:
-        """Load intents from JSON file"""
+        """Enhanced intents loading with DataLoader"""
         if filepath is None:
-            # Try multiple locations
             possible_paths = [
                 self.settings.data.intents_file,
                 f"data/{self.settings.data.intents_file}",
@@ -80,20 +81,11 @@ class DataProcessor:
                     filepath = path
                     break
             else:
-                raise FileNotFoundError(f"Could not find intents file: {self.settings.data.intents_file}")
+                raise FileNotFoundError(f"Could not find intents file")
         
-        try:
-            with open(filepath, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                self.intents_data = data
-                logger.info(f"Loaded intents from {filepath}")
-                return data
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in intents file {filepath}: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Error loading intents file {filepath}: {e}")
-            raise
+        # Use DataLoader instead of manual JSON loading
+        self.intents_data = self.data_loader.load_intents(filepath)
+        return self.intents_data
     
     def clean_text(self, text: str) -> str:
         """Clean and normalize text"""
