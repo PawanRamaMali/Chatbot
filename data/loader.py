@@ -11,9 +11,8 @@ from typing import Dict, List, Any, Optional, Union
 import logging
 from datetime import datetime
 
-from ..utils.logger import get_logger
-
-logger = get_logger(__name__)
+# Fixed import - use absolute import or create local logger
+logger = logging.getLogger(__name__)
 
 
 class DataLoader:
@@ -232,8 +231,6 @@ class DataLoader:
                     backup_dir: Optional[Union[str, Path]] = None) -> Path:
         """Create a backup of a file"""
         try:
-            from datetime import datetime
-            
             original_path = Path(filepath)
             if not original_path.exists():
                 raise FileNotFoundError(f"File not found: {filepath}")
@@ -280,114 +277,6 @@ class DataLoader:
             logger.error(f"Error finding files in {directory}: {e}")
             return []
     
-    @classmethod
-    def load_multiple_intents(cls, directory: Union[str, Path]) -> Dict[str, Any]:
-        """Load and merge multiple intent files from directory"""
-        try:
-            directory = Path(directory)
-            intent_files = cls.find_data_files(directory, "*.json")
-            
-            merged_intents = {'intents': []}
-            
-            for filepath in intent_files:
-                try:
-                    data = cls.load_intents(filepath)
-                    merged_intents['intents'].extend(data['intents'])
-                    logger.info(f"Merged intents from {filepath}")
-                except Exception as e:
-                    logger.warning(f"Skipping file {filepath}: {e}")
-            
-            # Remove duplicate intents based on tag
-            seen_tags = set()
-            unique_intents = []
-            
-            for intent in merged_intents['intents']:
-                if intent['tag'] not in seen_tags:
-                    unique_intents.append(intent)
-                    seen_tags.add(intent['tag'])
-                else:
-                    logger.warning(f"Duplicate intent tag found: {intent['tag']}")
-            
-            merged_intents['intents'] = unique_intents
-            logger.info(f"Merged {len(unique_intents)} unique intents from {len(intent_files)} files")
-            
-            return merged_intents
-            
-        except Exception as e:
-            logger.error(f"Error loading multiple intents from {directory}: {e}")
-            raise
-    
-    @staticmethod
-    def validate_file_format(filepath: Union[str, Path], 
-                           expected_format: str) -> bool:
-        """Validate file format by extension and content"""
-        try:
-            filepath = Path(filepath)
-            
-            # Check extension
-            if not filepath.suffix.lower() == f".{expected_format.lower()}":
-                return False
-            
-            # Basic content validation
-            if expected_format.lower() == 'json':
-                try:
-                    DataLoader.load_json(filepath)
-                    return True
-                except:
-                    return False
-            
-            elif expected_format.lower() == 'yaml':
-                try:
-                    DataLoader.load_yaml(filepath)
-                    return True
-                except:
-                    return False
-            
-            elif expected_format.lower() == 'csv':
-                try:
-                    DataLoader.load_csv(filepath)
-                    return True
-                except:
-                    return False
-            
-            return True
-            
-        except Exception:
-            return False
-    
-    @staticmethod
-    def get_file_info(filepath: Union[str, Path]) -> Dict[str, Any]:
-        """Get information about a file"""
-        try:
-            filepath = Path(filepath)
-            
-            if not filepath.exists():
-                return {'exists': False}
-            
-            stat = filepath.stat()
-            
-            info = {
-                'exists': True,
-                'size_bytes': stat.st_size,
-                'size_human': DataLoader._format_bytes(stat.st_size),
-                'modified': stat.st_mtime,
-                'extension': filepath.suffix.lower(),
-                'is_file': filepath.is_file(),
-                'is_dir': filepath.is_dir()
-            }
-            
-            # Try to determine content type
-            if info['extension'] in ['.json', '.yaml', '.yml', '.csv', '.txt']:
-                info['content_type'] = info['extension'][1:]  # Remove dot
-            else:
-                info['content_type'] = 'unknown'
-            
-            return info
-            
-        except Exception as e:
-            logger.error(f"Error getting file info for {filepath}: {e}")
-            return {'exists': False, 'error': str(e)}
-    
     @staticmethod
     def _format_bytes(bytes_value: int) -> str:
         """Format bytes in human readable format"""
@@ -396,125 +285,6 @@ class DataLoader:
                 return f"{bytes_value:.1f} {unit}"
             bytes_value /= 1024.0
         return f"{bytes_value:.1f} PB"
-    
-    @classmethod
-    def export_conversations(cls, conversations: Dict[str, List[Dict]], 
-                           output_path: Union[str, Path],
-                           format: str = 'json') -> None:
-        """Export conversation data in various formats"""
-        try:
-            output_path = Path(output_path)
-            
-            if format.lower() == 'json':
-                cls.save_json(conversations, output_path)
-            
-            elif format.lower() == 'csv':
-                # Flatten conversations for CSV
-                flat_data = []
-                for user_id, user_conversations in conversations.items():
-                    for conv in user_conversations:
-                        flat_data.append({
-                            'user_id': user_id,
-                            'timestamp': conv.get('timestamp', ''),
-                            'message': conv.get('message', ''),
-                            'response': conv.get('response', ''),
-                            'intent': conv.get('intent', ''),
-                            'confidence': conv.get('confidence', 0)
-                        })
-                cls.save_csv(flat_data, output_path)
-            
-            elif format.lower() == 'yaml':
-                cls.save_yaml(conversations, output_path)
-            
-            else:
-                raise ValueError(f"Unsupported export format: {format}")
-            
-            logger.info(f"Exported conversations to {output_path}")
-            
-        except Exception as e:
-            logger.error(f"Error exporting conversations: {e}")
-            raise
-    
-    @classmethod
-    def load_training_data(cls, data_dir: Union[str, Path]) -> Dict[str, Any]:
-        """Load all training data from directory"""
-        try:
-            data_dir = Path(data_dir)
-            
-            training_data = {}
-            
-            # Load intents
-            intents_files = ['intents.json', 'training_data.json', 'data.json']
-            for filename in intents_files:
-                filepath = data_dir / filename
-                if filepath.exists():
-                    training_data['intents'] = cls.load_intents(filepath)
-                    break
-            
-            # Load additional data files
-            additional_files = {
-                'words.pkl': 'words',
-                'classes.pkl': 'classes',
-                'model_config.json': 'model_config',
-                'training_config.yaml': 'training_config'
-            }
-            
-            for filename, key in additional_files.items():
-                filepath = data_dir / filename
-                if filepath.exists():
-                    if filename.endswith('.pkl'):
-                        training_data[key] = cls.load_pickle(filepath)
-                    elif filename.endswith('.json'):
-                        training_data[key] = cls.load_json(filepath)
-                    elif filename.endswith(('.yaml', '.yml')):
-                        training_data[key] = cls.load_yaml(filepath)
-            
-            logger.info(f"Loaded training data: {list(training_data.keys())}")
-            return training_data
-            
-        except Exception as e:
-            logger.error(f"Error loading training data from {data_dir}: {e}")
-            raise
-    
-    @classmethod
-    def create_data_manifest(cls, data_dir: Union[str, Path]) -> Dict[str, Any]:
-        """Create a manifest of all data files in directory"""
-        try:
-            data_dir = Path(data_dir)
-            
-            manifest = {
-                'created': str(datetime.now().isoformat()),
-                'directory': str(data_dir),
-                'files': {}
-            }
-            
-            if not data_dir.exists():
-                manifest['error'] = 'Directory does not exist'
-                return manifest
-            
-            # Scan all files
-            for filepath in data_dir.rglob('*'):
-                if filepath.is_file():
-                    relative_path = filepath.relative_to(data_dir)
-                    manifest['files'][str(relative_path)] = cls.get_file_info(filepath)
-            
-            manifest['summary'] = {
-                'total_files': len(manifest['files']),
-                'total_size': sum(
-                    info.get('size_bytes', 0) 
-                    for info in manifest['files'].values()
-                ),
-                'file_types': list(set(
-                    info.get('content_type', 'unknown') 
-                    for info in manifest['files'].values()
-                ))
-            }
-            
-            return manifest
-            
-        except Exception as e:
-            logger.error(f"Error creating data manifest: {e}")
-            return {'error': str(e)}
 
 
 # Convenience functions
